@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="PurchaseMapper">
+ 	<resultMap id="purchaseSelectMap" type="purchase">
+ 		<result property="purchaseNo" column="purchase_no" jdbcType="NUMERIC"/>
+ 		<result property="userId" column="user_id" jdbcType="VARCHAR"/>
+ 		<result property="paymentOption" column="payment_option" jdbcType="VARCHAR"/>
+ 		<result property="itemCategory" column="item_category" jdbcType="VARCHAR"/>
+ 		<result property="importId" column="import_id" jdbcType="VARCHAR"/>
+ 		<result property="purchaseDate" column="purchase_date" jdbcType="DATE"/>
+ 		<result property="refundOption" column="refund_option" jdbcType="VARCHAR"/>
+ 		<result property="price" column="price" jdbcType="NUMERIC"/>
+ 		<result property="itemNo" column="item_no" jdbcType="NUMERIC"/>
+ 	</resultMap>
+ 	
+ 	<insert id="addPurchase" parameterType="purchase">
+ 		INSERT INTO purchase
+		VALUES (SEQ_PURCHASE_PURCHASE_NO.NEXTVAL, #{userId}, #{paymentOption}, #{itemCategory}, #{importId:VARCHAR}, SYSDATE, '1', #{price}, SEQ_ITEM_ITEM_NO.CURRVAL )
+ 	</insert>
+ 	
+ 	<select id="getPurchase" parameterType="int" resultMap="purchaseSelectMap">
+ 		SELECT * FROM purchase
+		WHERE purchase_no = #{value}
+ 	</select>
+ 	
+ 	<select id="getPurchaseList" parameterType="map" resultMap="purchaseSelectMap">
+ 		SELECT * 
+		FROM ( SELECT inner_table.* , ROWNUM AS row_seq
+				FROM (	SELECT * FROM purchase  
+						WHERE user_id = #{userId} 
+				) inner_table 
+				WHERE ROWNUM &lt; = #{search.endRowNum} ) 
+		WHERE row_seq BETWEEN #{search.startRowNum} AND #{search.endRowNum}
+ 	</select>
+ 	
+ 	<select id="getTotalCount" parameterType="map" resultType="int">
+ 		SELECT COUNT(*)
+		FROM (
+				SELECT * FROM purchase  
+						WHERE user_id = #{userId} 
+								<if test="search.searchCondition == 1">
+									AND item_category = #{search.searchKeyword}
+								</if>
+								<if test="search.searchCondition != 2">
+									AND refund_option = '1'
+								</if>
+								<if test="search.searchCondition == 2">
+									AND refund_option = '2'
+								</if>
+		) countTable
+ 	</select>
+ 	
+ 	<update id="updateRefundOptionByPurchaseNo" parameterType="int">
+ 		UPDATE purchase
+		SET refund_option = '2'
+		WHERE purchase_no = #{value}
+ 	</update>
+ 	
+ 	<update id="updateRefundOptionByItemNo" parameterType="int">
+ 		UPDATE purchase
+		SET refund_option = '3'
+		WHERE item_no = #{value}
+ 	</update>
+ 	
+ 	<delete id="deletePoint" parameterType="int">
+		DELETE reward
+		WHERE purchase_no = #{value}
+ 	</delete>
+ 	
+ 	<delete id="deleteItem" parameterType="int">
+ 		DELETE item
+ 		WHERE item_no = #{value}
+ 	</delete>
+</mapper>
